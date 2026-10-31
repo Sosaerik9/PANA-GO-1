@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PANAX GO</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+      padding: 20px;
+      background-color: #f5f5f5;
+      font-family: Arial, sans-serif;
+    }
+
+    /* ---------- MODAL BIENVENIDA ---------- */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background-color: rgba(0, 0, 0, 0.75);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      padding: 20px;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .modal-overlay.hidden {
+      display: none;
+    }
+
+    .modal-box {
+      position: relative;
+      background: #000;
+      border-radius: 16px;
+      max-width: 420px;
+      width: 100%;
+      overflow: hidden;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+      animation: popIn 0.4s ease;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .modal-box .welcome-img {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+
+    .btn-container {
+      padding: 18px 20px;
+      background: #000;
+      display: flex;
+      justify-content: center;
+    }
+
+    .btn-close {
+      background-color: #ffffff;
+      color: #01875f;
+      border: none;
+      font-size: 16px;
+      font-weight: bold;
+      padding: 14px 48px;
+      border-radius: 8px;
+      cursor: pointer;
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+      transition: background-color 0.2s ease, transform 0.1s ease;
+      white-space: nowrap;
+    }
+
+    .btn-close:hover {
+      background-color: #e6e6e6;
+    }
+
+    .btn-close:active {
+      transform: scale(0.97);
+    }
+
+    /* ---------- CONTENIDO PRINCIPAL ---------- */
+    .main-content {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+      width: 100%;
+      max-width: 420px;
+      animation: fadeIn 0.4s ease;
+    }
+
+    .main-content.visible {
+      display: flex;
+    }
+
+    /* ---------- CONTENEDOR LIBRO ---------- */
+    .book-container {
+      position: relative;
+      width: 100%;
+      max-width: 380px;
+      aspect-ratio: 3 / 4;
+      perspective: 1500px;
+      border-radius: 14px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+      overflow: hidden;
+      background: #000;
+    }
+
+    .book-container img {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 14px;
+      backface-visibility: hidden;
+      transform-origin: left center;
+    }
+
+    .img-page-1 {
+      z-index: 2;
+      transition: transform 1.2s cubic-bezier(0.4, 0, 0.2, 1),
+                  opacity 0.6s ease 0.9s;
+    }
+
+    .img-page-2 {
+      z-index: 1;
+    }
+
+    .book-container.flip .img-page-1 {
+      transform: rotateY(-120deg) skewY(-3deg);
+      opacity: 0;
+    }
+
+    .book-container::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(90deg, rgba(0,0,0,0.4) 0%, transparent 40%);
+      opacity: 0;
+      pointer-events: none;
+      z-index: 3;
+      transition: opacity 0.4s ease;
+      border-radius: 14px;
+    }
+
+    .book-container.flip::after {
+      opacity: 1;
+      animation: shadowSweep 1.2s ease;
+    }
+
+    @keyframes shadowSweep {
+      0%   { opacity: 0; }
+      50%  { opacity: 1; }
+      100% { opacity: 0; }
+    }
+
+    /* ---------- BOTONES ---------- */
+    .btn-group {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      width: 100%;
+      max-width: 380px;
+    }
+
+    .btn {
+      position: relative;
+      overflow: hidden;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      width: 100%;
+      padding: 14px 20px;
+      border: none;
+      border-radius: 8px;
+      font-family: Arial, sans-serif;
+      font-size: 16px;
+      font-weight: bold;
+      text-decoration: none;
+      cursor: pointer;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      transition: background-color 0.2s ease, transform 0.1s ease;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .btn:active { transform: scale(0.98); }
+
+    .btn-info {
+      background-color: #25d366;
+      color: #ffffff;
+    }
+    .btn-info:hover { background-color: #1ebe5b; }
+
+    .btn-trial {
+      background-color: #128c7e;
+      color: #ffffff;
+    }
+    .btn-trial:hover { background-color: #0e6f64; }
+
+    .btn-download {
+      background-color: #01875f;
+      color: #ffffff;
+    }
+    .btn-download:hover { background-color: #016c4c; }
+
+    .btn .ripple {
+      position: absolute;
+      border-radius: 50%;
+      background-color: rgba(255, 255, 255, 0.55);
+      transform: scale(0);
+      animation: rippleAnim 0.65s linear;
+      pointer-events: none;
+    }
+
+    @keyframes rippleAnim {
+      to {
+        transform: scale(4);
+        opacity: 0;
+      }
+    }
+
+    /* ---------- MODAL FINAL ---------- */
+    .final-modal {
+      position: fixed;
+      inset: 0;
+      background-color: rgba(0, 0, 0, 0.85);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 2000;
+      padding: 20px;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .final-modal.show {
+      display: flex;
+    }
+
+    .final-modal-box {
+      position: relative;
+      background: linear-gradient(135deg, #01875f 0%, #016c4c 100%);
+      color: #ffffff;
+      padding: 50px 30px 40px;
+      border-radius: 16px;
+      text-align: center;
+      max-width: 440px;
+      width: 100%;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+      animation: popIn 0.4s ease;
+    }
+
+    .final-modal-close-x {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background-color: rgba(255, 255, 255, 0.2);
+      border: none;
+      color: #ffffff;
+      font-size: 22px;
+      font-weight: bold;
+      line-height: 1;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background-color 0.2s ease, transform 0.15s ease;
+    }
+
+    .final-modal-close-x:hover {
+      background-color: rgba(255, 255, 255, 0.35);
+      transform: rotate(90deg);
+    }
+
+    .final-modal-box h2 {
+      margin: 0 0 12px;
+      font-size: 24px;
+      line-height: 1.3;
+      letter-spacing: 0.5px;
+    }
+
+    .final-modal-box .highlight {
+      font-size: 18px;
+      font-weight: bold;
+      margin: 16px 0 0;
+      line-height: 1.5;
+      color: #ffd54f;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to   { opacity: 1; }
+    }
+
+    @keyframes popIn {
+      from { opacity: 0; transform: scale(0.85); }
+      to   { opacity: 1; transform: scale(1); }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="modal-overlay" id="welcomeModal">
+    <div class="modal-box">
+      <img
+        class="welcome-img"
+        src="https://i.pinimg.com/736x/ae/0d/cf/ae0dcf16b7aeebb36c167e78caf77482.jpg"
+        alt="PANAX GO Bienvenida"
+        referrerpolicy="no-referrer"
+      >
+      <div class="btn-container">
+        <button class="btn-close" id="closeBtn">Comenzar</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="main-content" id="mainContent">
+    <div class="book-container" id="bookContainer">
+      <img
+        class="img-page-2"
+        src="https://i.pinimg.com/736x/fb/6a/5e/fb6a5e387a2c87e3756b178bc30ef6d7.jpg"
+        alt="PANAX GO 2"
+        referrerpolicy="no-referrer"
+      >
+      <img
+        class="img-page-1"
+        src="https://i.pinimg.com/736x/fc/45/2d/fc452d28bddd7c7e73bcf47340cbce81.jpg"
+        alt="PANAX GO"
+        referrerpolicy="no-referrer"
+      >
+    </div>
+
+    <div class="btn-group">
+      <a href="https://wa.me/584161379797?text=Hola%2C%20escanee%20el%20c%C3%B3digo%20de%20su%20publicidad%2C%20deseo%20m%C3%A1s%20informaci%C3%B3n%20de%20PANAX%20GO" target="_blank" rel="noopener noreferrer" class="btn btn-info">
+        Solicitar Información
+      </a>
+      <a href="https://wa.me/584161379797?text=Hola%20amigos%2C%20deseo%20prueba%20gratis%20de%20PANAX%20GO" target="_blank" rel="noopener noreferrer" class="btn btn-trial">
+        Solicitar Prueba Gratis
+      </a>
+      <a href="https://play.google.com/store/apps/details?id=com.goplus.player" target="_blank" rel="noopener noreferrer" class="btn btn-download">
+        Descargar GO PLUS
+      </a>
+    </div>
+  </div>
+
+  <div class="final-modal" id="finalModal">
+    <div class="final-modal-box">
+      <button class="final-modal-close-x" id="closeFinalBtn" aria-label="Cerrar">✕</button>
+      <h2>⏰ NO ESPERE MÁS PARA TENER TODO EN UN SOLO LUGAR</h2>
+      <p class="highlight">
+        Descarga aquí o descarga en:<br>
+        Smart TV · Fire TV · Google · ONN · Roku · PC
+      </p>
+    </div>
+  </div>
+
+  <script>
+    const welcomeModal  = document.getElementById('welcomeModal');
+    const closeBtn      = document.getElementById('closeBtn');
+    const mainContent   = document.getElementById('mainContent');
+    const bookContainer = document.getElementById('bookContainer');
+    const finalModal    = document.getElementById('finalModal');
+    const closeFinalBtn = document.getElementById('closeFinalBtn');
+
+    closeBtn.addEventListener('click', () => {
+      welcomeModal.classList.add('hidden');
+      mainContent.classList.add('visible');
+
+      setTimeout(() => {
+        bookContainer.classList.add('flip');
+        setTimeout(() => {
+          finalModal.classList.add('show');
+        }, 1300 + 6000);
+      }, 5000);
+    });
+
+    closeFinalBtn.addEventListener('click', () => {
+      finalModal.classList.remove('show');
+    });
+
+    document.querySelectorAll('.btn').forEach(btn => {
+      btn.addEventListener('click', function (e) {
+        const rect = this.getBoundingClientRect();
+        const size = Math.max(rect.width, rect.height);
+        const ripple = document.createElement('span');
+        ripple.className = 'ripple';
+        ripple.style.width = ripple.style.height = size + 'px';
+        ripple.style.left = (e.clientX - rect.left - size / 2) + 'px';
+        ripple.style.top  = (e.clientY - rect.top  - size / 2) + 'px';
+        this.appendChild(ripple);
+        setTimeout(() => ripple.remove(), 700);
+      });
+    });
+  </script>
+</body>
+</html>
